@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Upgraded Falling Game</title>
+</head>
+<body>
+<canvas id="myCanvas" width="300" height="300" style="background:url('/img/etc/boardwalk.png'); background-size: cover">
+</canvas>
+<script>
+var ctx = myCanvas.getContext("2d");
+
+// Player 1
+var player1_x = 50;
+var player1_y = myCanvas.height - 50;
+var player1Img = new Image();
+player1Img.src = "https://s2js.com/img/etc/ladybug.png"; // New player 1 image
+
+// Player 2
+var player2_x = 200;
+var player2_y = myCanvas.height - 50;
+var player2Img = new Image();
+player2Img.src = "https://s2js.com/img/etc/ladybug.png"; // New player 2 image
+
+var objects = [];
+var score = 0;
+var melon_speed = 3;
+var FPS = 40; 
+var time_remaining = 180;
+var increaseSpeedInterval = 10 * FPS; // Increase speed every 10 seconds
+var frameCount = 0;
+
+function restart_game() {
+    time_remaining = 180;
+    score = 0;
+    melon_speed = 3;
+    objects = [];
+}
+
+function ImagesTouching(x1, y1, img1, x2, y2, img2) {
+    if (x1 >= x2 + img2.width || x1 + img1.width <= x2) return false;
+    if (y1 >= y2 + img2.height || y1 + img1.height <= y2) return false;
+    return true;
+}
+
+function Do_a_Frame() {
+    ctx.clearRect(0, 0, myCanvas.width, myCanvas.height);
+
+    ctx.fillStyle = "purple";
+    ctx.font = "20px Arial";
+    ctx.fillText("Score: " + score, 0, 20);
+    ctx.fillText("Time Remaining: " + Math.round(time_remaining), 0, 45);
+
+    ctx.drawImage(player1Img, player1_x, player1_y);
+    ctx.drawImage(player2Img, player2_x, player2_y);
+
+    if (time_remaining <= 0) {
+        ctx.fillStyle = "red";
+        ctx.font = "bold 50px Arial";
+        ctx.textAlign = "center";
+        ctx.fillText("Game Over", myCanvas.width / 2, myCanvas.height / 2);
+        ctx.font = "bold 20px Arial";
+        ctx.fillText("Press S to play again", myCanvas.width / 2, (myCanvas.height / 2) + 50);
+        ctx.textAlign = "left";
+    } else {
+        time_remaining -= 1 / FPS;
+        frameCount++;
+
+        if (frameCount % increaseSpeedInterval === 0) {
+            melon_speed += 1;
+        }
+
+        if (Math.random() < 0.02) {
+            var objectType = Math.random() < 0.5 ? 'catch' : 'avoid';
+            var object = {
+                x: Math.random() * myCanvas.width,
+                y: 0,
+                speedX: (Math.random() - 0.5) * melon_speed,
+                speedY: melon_speed,
+                type: objectType,
+                img: new Image()
+            };
+            object.img.src = objectType === 'catch' ? "https://s2js.com/img/etc/watermelon2.png" : "https://s2js.com/img/etc/bomb.png"; // New images
+            objects.push(object);
+        }
+
+        for (var i = 0; i < objects.length; i++) {
+            var obj = objects[i];
+            obj.x += obj.speedX;
+            obj.y += obj.speedY;
+
+            if (obj.y > myCanvas.height) {
+                if (obj.type === 'catch') {
+                    score -= 1;
+                }
+                objects.splice(i, 1);
+                i--;
+                continue;
+            }
+
+            ctx.drawImage(obj.img, obj.x, obj.y);
+
+            if (ImagesTouching(player1_x, player1_y, player1Img, obj.x, obj.y, obj.img) ||
+                ImagesTouching(player2_x, player2_y, player2Img, obj.x, obj.y, obj.img)) {
+                if (obj.type === 'catch') {
+                    score += 1;
+                } else {
+                    score -= 1;
+                }
+                objects.splice(i, 1);
+                i--;
+            }
+        }
+    }
+}
+
+setInterval(Do_a_Frame, 1000 / FPS);
+
+function MyKeyDownHandler(MyEvent) {
+    switch (MyEvent.keyCode) {
+        // Player 1 controls (WASD)
+        case 65: if (player1_x > 0) player1_x -= 10; break; // A (left)
+        case 68: if (player1_x + player1Img.width < myCanvas.width) player1_x += 10; break; // D (right)
+        case 87: if (player1_y > 0) player1_y -= 10; break; // W (up)
+        case 83: if (player1_y + player1Img.height < myCanvas.height) player1_y += 10; break; // S (down)
+        // Player 2 controls (Arrow keys)
+        case 37: if (player2_x > 0) player2_x -= 10; break; // Left arrow
+        case 39: if (player2_x + player2Img.width < myCanvas.width) player2_x += 10; break; // Right arrow
+        case 38: if (player2_y > 0) player2_y -= 10; break; // Up arrow
+        case 40: if (player2_y + player2Img.height < myCanvas.height) player2_y += 10; break; // Down arrow
+        // Restart game
+        case 82: restart_game(); break; // R key to restart
+    }
+    MyEvent.preventDefault();
+}
+
+addEventListener("keydown", MyKeyDownHandler);
+
+myCanvas.width = window.innerWidth - 20;
+myCanvas.height = window.innerHeight - 20;
+</script>
+</body>
+</html>
